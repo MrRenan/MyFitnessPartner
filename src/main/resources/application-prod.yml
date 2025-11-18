@@ -1,0 +1,69 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      auto-index-creation: true
+
+  rabbitmq:
+    addresses: ${RABBITMQ_ADDRESSES}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    ssl:
+      enabled: true
+
+# Twilio Configuration
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID}
+  auth-token: ${TWILIO_AUTH_TOKEN}
+  whatsapp-number: ${TWILIO_WHATSAPP_NUMBER}
+  webhook-url: ${TWILIO_WEBHOOK_URL}
+
+# OpenAI Configuration
+openai:
+  api-key: ${OPENAI_API_KEY}
+  model: ${OPENAI_MODEL:gpt-4-turbo-preview}
+  max-tokens: ${OPENAI_MAX_TOKENS:1000}
+  temperature: ${OPENAI_TEMPERATURE:0.7}
+
+# Application specific configs
+app:
+  messaging:
+    queue:
+      whatsapp-messages: whatsapp.messages.queue
+      ai-processing: ai.processing.queue
+    exchange:
+      whatsapp: whatsapp.exchange
+      ai: ai.exchange
+
+  fitness:
+    default-calorie-goal: 2000
+    max-daily-meals: 10
+
+logging:
+  level:
+    root: INFO
+    io.github.mrrenan.myfitnesspartner: INFO
+  file:
+    name: /var/log/myfitnesspartner/application.log
+    max-size: 10MB
+    max-history: 30

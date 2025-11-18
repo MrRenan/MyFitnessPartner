@@ -1,0 +1,50 @@
+spring:
+    application:
+        name: myfitnesspartner
+
+    profiles:
+        active: ${SPRING_PROFILE:dev}
+
+    jackson:
+        serialization:
+            write-dates-as-timestamps: false
+        time-zone: America/Sao_Paulo
+        default-property-inclusion: non_null
+
+server:
+    port: ${SERVER_PORT:8080}
+    servlet:
+        context-path: /api
+    error:
+        include-message: always
+        include-binding-errors: always
+        include-stacktrace: on_param
+        include-exception: false
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,metrics,prometheus
+    endpoint:
+        health:
+            show-details: when-authorized
+    metrics:
+        export:
+            prometheus:
+                enabled: true
+
+logging:
+    level:
+        root: INFO
+        io.github.mrrenan.myfitnesspartner: DEBUG
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+springdoc:
+    api-docs:
+        path: /v3/api-docs
+    swagger-ui:
+        path: /swagger-ui.html
+        enabled: true

@@ -1,0 +1,156 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'io.github.mrrenan'
+version = '0.0.1-SNAPSHOT'
+description = 'Your AI-powered fitness partner via WhatsApp'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+    twilioVersion = '10.0.0'
+    testcontainersVersion = '1.19.3'
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // AMQP for messaging (RabbitMQ)
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // Twilio SDK for WhatsApp integration
+    implementation "com.twilio.sdk:twilio:${twilioVersion}"
+
+    // OpenAI Java Client (unofficial but widely used)
+    implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+
+    // PostgreSQL Driver
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Lombok - Reduce boilerplate
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Configuration Processor
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // Dev Tools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // MapStruct for DTO mapping (optional but recommended)
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+    // SpringDoc OpenAPI (Swagger)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+    // Apache Commons Lang (useful utilities)
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+
+    // Jackson for JSON processing (already included but explicit for clarity)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Test Dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.amqp:spring-rabbit-test'
+
+    // TestContainers for integration tests
+    testImplementation "org.testcontainers:testcontainers:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mongodb:${testcontainersVersion}"
+    testImplementation "org.testcontainers:rabbitmq:${testcontainersVersion}"
+
+    // Mockito for mocking
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    // AssertJ for fluent assertions
+    testImplementation 'org.assertj:assertj-core'
+
+    // Lombok for tests
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+//jacoco {
+//    toolVersion = "0.8.11"
+//}
+
+//jacocoTestReport {
+//    dependsOn test
+//    reports {
+//        xml.required = true
+//        html.required = true
+//        csv.required = false
+//    }
+//    afterEvaluate {
+//        classDirectories.setFrom(files(classDirectories.files.collect {
+//            fileTree(dir: it, exclude: [
+//                '**/config/**',
+//                '**/dto/**',
+//                '**/entity/**',
+//                '**/*Application.class'
+//            ])
+//        }))
+//    }
+//}
+//
+//jacocoTestCoverageVerification {
+//    violationRules {
+//        rule {
+//            limit {
+//                minimum = 0.70
+//            }
+//        }
+//    }
+//}
+
+// Task para rodar apenas testes unitários
+tasks.register('unitTest', Test) {
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+    description = 'Runs unit tests only'
+    group = 'verification'
+}
+
+// Task para rodar apenas testes de integração
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    description = 'Runs integration tests only'
+    group = 'verification'
+    shouldRunAfter test
+}

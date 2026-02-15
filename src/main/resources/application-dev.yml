@@ -18,50 +18,46 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         use_sql_comments: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
 
-  data:
-    mongodb:
-      host: ${MONGO_HOST:localhost}
-      port: ${MONGO_PORT:27017}
-      database: ${MONGO_DB:myfitnesspartner}
-      auto-index-creation: true
+# Google Gemini Configuration
+gemini:
+  api-key: ${GEMINI_API_KEY:your_gemini_api_key}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}
+  max-tokens: ${GEMINI_MAX_TOKENS:2048}
+  temperature: ${GEMINI_TEMPERATURE:0.7}
 
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-
-# Twilio Configuration
-twilio:
-  account-sid: ${TWILIO_ACCOUNT_SID:your_account_sid}
-  auth-token: ${TWILIO_AUTH_TOKEN:your_auth_token}
-  whatsapp-number: ${TWILIO_WHATSAPP_NUMBER:whatsapp:+14155238886}
-  webhook-url: ${TWILIO_WEBHOOK_URL:http://localhost:8080/api/webhook/whatsapp}
-
-# OpenAI Configuration
-openai:
-  api-key: ${OPENAI_API_KEY:your_api_key}
-  model: ${OPENAI_MODEL:gpt-4-turbo-preview}
-  max-tokens: ${OPENAI_MAX_TOKENS:1000}
-  temperature: ${OPENAI_TEMPERATURE:0.7}
+# WhatsApp Business API (Meta) Configuration
+whatsapp:
+  api-url: ${WHATSAPP_API_URL:https://graph.facebook.com/v18.0}
+  phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:your_phone_number_id}
+  business-account-id: ${WHATSAPP_BUSINESS_ACCOUNT_ID:your_business_account_id}
+  access-token: ${WHATSAPP_ACCESS_TOKEN:your_access_token}
+  verify-token: ${WHATSAPP_VERIFY_TOKEN:your_verify_token}
+  webhook-url: ${WHATSAPP_WEBHOOK_URL:http://localhost:8080/api/webhook/whatsapp}
 
 # Application specific configs
 app:
-  messaging:
-    queue:
-      whatsapp-messages: whatsapp.messages.queue
-      ai-processing: ai.processing.queue
-    exchange:
-      whatsapp: whatsapp.exchange
-      ai: ai.exchange
-
   fitness:
     default-calorie-goal: 2000
     max-daily-meals: 10
 
+  ai:
+    system-prompt: |
+      Você é um assistente fitness pessoal especializado em nutrição e exercícios.
+      Seu objetivo é ajudar o usuário a alcançar suas metas de saúde através de:
+      - Cálculo preciso de calorias de refeições
+      - Orientações sobre alimentação saudável
+      - Sugestões de exercícios e treinos
+      - Motivação e acompanhamento de progresso
+      
+      Seja sempre cordial, motivador e forneça informações baseadas em evidências científicas.
+      Quando calcular calorias, seja o mais preciso possível e explique sua estimativa.
+
 logging:
   level:
-    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    io.github.mrrenan.myfitnesspartner: DEBUG

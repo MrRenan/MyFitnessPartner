@@ -59,6 +59,11 @@ public class User {
     @Column(nullable = false)
     private Double height; // in cm
 
+    @NotNull(message = "Gender is required")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Gender gender;
+
     @NotNull(message = "Activity level is required")
     @Enumerated(EnumType.STRING)
     @Column(name = "activity_level", nullable = false, length = 30)
@@ -90,12 +95,10 @@ public class User {
      * Calculate Basal Metabolic Rate (BMR) using Mifflin-St Jeor Equation
      * BMR = 10 * weight(kg) + 6.25 * height(cm) - 5 * age + s
      * where s is +5 for males and -161 for females
-     *
-     * For simplicity, we'll use a neutral calculation
      */
     public double calculateBMR() {
         int age = LocalDate.now().getYear() - dateOfBirth.getYear();
-        return 10 * weight + 6.25 * height - 5 * age - 161;
+        return 10 * weight + 6.25 * height - 5 * age + gender.getBmrModifier();
     }
 
     /**

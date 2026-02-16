@@ -49,6 +49,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle UnsupportedOperationException (features not yet implemented)
+     */
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedOperationException(
+            UnsupportedOperationException ex, WebRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_IMPLEMENTED.value())
+                .error("Feature Not Implemented")
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        log.warn("Feature not yet implemented: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(errorResponse);
+    }
+
+    /**
      * Handle UserNotFoundException
      */
     @ExceptionHandler(io.github.mrrenan.myfitnesspartner.domain.exception.UserNotFoundException.class)

@@ -34,6 +34,7 @@ public class MealServiceImpl implements MealService {
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
     private final DailyGoalService dailyGoalService;
+    private final GeminiService geminiService;
     private final MealMapper mealMapper;
     private final AppProperties appProperties;
 
@@ -189,37 +190,57 @@ public class MealServiceImpl implements MealService {
     @Override
     @Transactional
     public MealResponse registerMealFromDescription(CreateMealFromDescriptionRequest request) {
-        log.info("Attempting to register meal from description for user: {}", request.getWhatsappNumber());
+        log.info("Registering meal from AI description for user: {}", request.getWhatsappNumber());
 
-        // TODO: This will be implemented when GeminiService is ready
-        // For now, throw exception to indicate AI integration is needed
-        throw new UnsupportedOperationException(
-                "AI integration not yet implemented. " +
-                        "This endpoint will use Gemini AI to calculate calories from description. " +
-                        "For now, use POST /api/meals with calories already calculated."
-        );
+        try {
+            // Step 1: Use AI to calculate calories from description
+            io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate estimate =
+                    geminiService.calculateCaloriesFromDescription(request.getDescription());
 
-        /*
-         * Future implementation:
-         *
-         * 1. Call GeminiService to analyze description
-         * CalorieEstimate estimate = geminiService.calculateCaloriesFromDescription(request.getDescription());
-         *
-         * 2. Build CreateMealRequest with AI-calculated values
-         * CreateMealRequest mealRequest = CreateMealRequest.builder()
-         *     .whatsappNumber(request.getWhatsappNumber())
-         *     .description(request.getDescription())
-         *     .mealType(request.getMealType())
-         *     .calories(estimate.getCalories())
-         *     .protein(estimate.getProtein())
-         *     .carbohydrates(estimate.getCarbohydrates())
-         *     .fat(estimate.getFat())
-         *     .notes(request.getNotes())
-         *     .build();
-         *
-         * 3. Register meal with calculated values
-         * return registerMeal(mealRequest);
-         */
+            log.info("AI calculated {} calories for: {}", estimate.getCalories(), request.getDescription());
+            log.debug("Full estimate: {}", estimate);
+
+            // Step 2: Build CreateMealRequest with AI-calculated values
+            CreateMealRequest mealRequest = CreateMealRequest.builder()
+                    .whatsappNumber(request.getWhatsappNumber())
+                    .description(request.getDescription())
+                    .mealType(request.getMealType())
+                    .calories(estimate.getCalories())
+                    .protein(estimate.getProtein())
+                    .carbohydrates(estimate.getCarbohydrates())
+                    .fat(estimate.getFat())
+                    .notes(buildNotesWithAIInsight(request.getNotes(), estimate))
+                    .build();
+
+            // Step 3: Register meal with calculated values (this updates daily goal automatically)
+            MealResponse response = registerMeal(mealRequest);
+
+            log.info("Meal registered successfully from AI description. Meal ID: {}", response.getId());
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("Error registering meal from description: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to register meal using AI: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Build notes combining user notes and AI insights
+     */
+    private String buildNotesWithAIInsight(String userNotes,
+                                           io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate estimate) {
+        StringBuilder notes = new StringBuilder();
+
+        if (userNotes != null && !userNotes.isBlank()) {
+            notes.append(userNotes).append("\n\n");
+        }
+
+        notes.append("📊 Análise IA:\n");
+        notes.append(estimate.getExplanation());
+        notes.append(String.format("\n(Confiança: %.0f%%)", estimate.getConfidence() * 100));
+
+        return notes.toString();
     }
 
     /**

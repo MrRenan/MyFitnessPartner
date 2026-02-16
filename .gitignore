@@ -41,6 +41,9 @@ out/
 .env.local
 .env.*.local
 
+# Application configs with sensitive data
+src/main/resources/application-dev.yml
+
 ### Logs ###
 logs/
 *.log

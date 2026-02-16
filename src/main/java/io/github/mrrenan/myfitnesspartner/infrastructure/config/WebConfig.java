@@ -3,13 +3,14 @@ package io.github.mrrenan.myfitnesspartner.infrastructure.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.concurrent.Executor;
 
 /**
- * Web configuration for CORS and async processing.
+ * Web configuration for CORS, async processing, and HTTP clients.
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -38,5 +39,17 @@ public class WebConfig implements WebMvcConfigurer {
         executor.setAwaitTerminationSeconds(60);
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * WebClient for external HTTP calls (Gemini AI, WhatsApp API, etc.)
+     */
+    @Bean
+    public WebClient webClient() {
+        return WebClient.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(16 * 1024 * 1024)) // 16MB buffer
+                .build();
     }
 }

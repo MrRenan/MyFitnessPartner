@@ -1,7 +1,7 @@
 package io.github.mrrenan.myfitnesspartner.presentation.controller;
 
 import io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate;
-import io.github.mrrenan.myfitnesspartner.application.service.GeminiService;
+import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.Map;
 @Tag(name = "AI", description = "AI-powered endpoints for testing")
 public class AIController {
 
-    private final GeminiService geminiService;
+    private final FitnessAiPort fitnessAiPort;
 
     @PostMapping("/calculate-calories")
     @Operation(
@@ -33,21 +33,8 @@ public class AIController {
         String description = request.get("description");
         log.info("POST /ai/calculate-calories - Description: {}", description);
 
-        CalorieEstimate estimate = geminiService.calculateCaloriesFromDescription(description);
+        CalorieEstimate estimate = fitnessAiPort.analyzeFood(description);
         return ResponseEntity.ok(estimate);
     }
 
-    @PostMapping("/fitness-question")
-    @Operation(
-            summary = "Ask fitness question",
-            description = "Ask a general fitness, diet, or workout question to the AI"
-    )
-    public ResponseEntity<Map<String, String>> askFitnessQuestion(@RequestBody Map<String, String> request) {
-        String question = request.get("question");
-        String context = request.get("context");
-        log.info("POST /ai/fitness-question - Question: {}", question);
-
-        String response = geminiService.generateFitnessResponse(question, context);
-        return ResponseEntity.ok(Map.of("response", response));
-    }
 }

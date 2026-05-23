@@ -1,5 +1,6 @@
 package io.github.mrrenan.myfitnesspartner.application.service;
 
+import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
 import io.github.mrrenan.myfitnesspartner.domain.exception.DailyLimitExceededException;
 import io.github.mrrenan.myfitnesspartner.domain.exception.UserNotFoundException;
 import io.github.mrrenan.myfitnesspartner.domain.model.Meal;
@@ -34,7 +35,7 @@ public class MealServiceImpl implements MealService {
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
     private final DailyGoalService dailyGoalService;
-    private final GeminiService geminiService;
+    private final FitnessAiPort fitnessAiPort;
     private final MealMapper mealMapper;
     private final AppProperties appProperties;
 
@@ -195,7 +196,7 @@ public class MealServiceImpl implements MealService {
         try {
             // Step 1: Use AI to calculate calories from description
             io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate estimate =
-                    geminiService.calculateCaloriesFromDescription(request.getDescription());
+                    fitnessAiPort.analyzeFood(request.getDescription());
 
             log.info("AI calculated {} calories for: {}", estimate.getCalories(), request.getDescription());
             log.debug("Full estimate: {}", estimate);
@@ -236,9 +237,9 @@ public class MealServiceImpl implements MealService {
             notes.append(userNotes).append("\n\n");
         }
 
-        notes.append("📊 Análise IA:\n");
+        notes.append("📊 Análise IA:%n");
         notes.append(estimate.getExplanation());
-        notes.append(String.format("\n(Confiança: %.0f%%)", estimate.getConfidence() * 100));
+        notes.append(String.format("%n(Confiança: %.0f%%)", estimate.getConfidence() * 100));
 
         return notes.toString();
     }

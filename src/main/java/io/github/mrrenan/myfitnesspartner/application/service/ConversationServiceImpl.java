@@ -8,6 +8,8 @@ import io.github.mrrenan.myfitnesspartner.domain.repository.ConversationReposito
 import io.github.mrrenan.myfitnesspartner.domain.repository.UserRepository;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatResponse;
+import io.github.mrrenan.myfitnesspartner.presentation.dto.ConversationResponse;
+import io.github.mrrenan.myfitnesspartner.presentation.mapper.ConversationMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class ConversationServiceImpl implements ConversationService{
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final FitnessAiPort fitnessAiPort;
+    private final ConversationMapper conversationMapper;
 
     // Quantas mensagens anteriores enviar como contexto para a IA
     private static final int CONTEXT_MESSAGE_COUNT = 6;
@@ -73,18 +76,20 @@ public class ConversationServiceImpl implements ConversationService{
 
     @Override
     @Transactional(readOnly = true)
-    public List<Conversation> getHistory(String whatsappNumber) {
+    public List<ConversationResponse> getHistory(String whatsappNumber) {
         log.debug("Getting conversation history for user: {}", whatsappNumber);
         User user = findUserByWhatsapp(whatsappNumber);
-        return conversationRepository.findByUserOrderByCreatedAtDesc(user);
+        List<Conversation> conversations = conversationRepository.findByUserOrderByCreatedAtDesc(user);
+        return conversationMapper.toResponseList(conversations);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Conversation getLastConversation(String whatsappNumber) {
+    public ConversationResponse getLastConversation(String whatsappNumber) {
         log.debug("Getting last conversation for user: {}", whatsappNumber);
         User user = findUserByWhatsapp(whatsappNumber);
         return conversationRepository.findFirstByUserOrderByCreatedAtDesc(user)
+                .map(conversationMapper::toResponse)
                 .orElse(null);
     }
 

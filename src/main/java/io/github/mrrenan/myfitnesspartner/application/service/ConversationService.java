@@ -2,7 +2,7 @@ package io.github.mrrenan.myfitnesspartner.application.service;
 
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatResponse;
-import io.github.mrrenan.myfitnesspartner.domain.model.Conversation;
+import io.github.mrrenan.myfitnesspartner.presentation.dto.ConversationResponse;
 
 import java.util.List;
 
@@ -21,11 +21,11 @@ public interface ConversationService {
     /**
      * Get all conversations for a user
      */
-    List<Conversation> getHistory(String whatsappNumber);
+    List<ConversationResponse> getHistory(String whatsappNumber);
 
     /**
      * Get the most recent conversation for a user
      */
-    Conversation getLastConversation(String whatsappNumber);
+    ConversationResponse getLastConversation(String whatsappNumber);
 
 }

@@ -4,6 +4,7 @@ import io.github.mrrenan.myfitnesspartner.application.service.ConversationServic
 import io.github.mrrenan.myfitnesspartner.domain.model.Conversation;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatResponse;
+import io.github.mrrenan.myfitnesspartner.presentation.dto.ConversationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,9 +40,9 @@ public class ConversationController {
             summary = "Get history",
             description = "Get all conversations for a user"
     )
-    public ResponseEntity<List<Conversation>> getHistory(@RequestParam String whatsappNumber) {
+    public ResponseEntity<List<ConversationResponse>> getHistory(@RequestParam String whatsappNumber) {
         log.info("GET /conversations/history - User: {}", whatsappNumber);
-        List<Conversation> history = conversationService.getHistory(whatsappNumber);
+        List<ConversationResponse> history = conversationService.getHistory(whatsappNumber);
         return ResponseEntity.ok(history);
     }
 
@@ -50,9 +51,9 @@ public class ConversationController {
             summary = "Get last conversation",
             description = "Get the most recent conversation for a user"
     )
-    public ResponseEntity<Conversation> getLastConversation(@RequestParam String whatsappNumber) {
+    public ResponseEntity<ConversationResponse> getLastConversation(@RequestParam String whatsappNumber) {
         log.info("GET /conversations/last - User: {}", whatsappNumber);
-        Conversation conversation = conversationService.getLastConversation(whatsappNumber);
+        ConversationResponse conversation = conversationService.getLastConversation(whatsappNumber);
         return ResponseEntity.ok(conversation);
     }
 }

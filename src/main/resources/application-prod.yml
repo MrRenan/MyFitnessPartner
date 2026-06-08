@@ -1,4 +1,18 @@
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  ai:
+    openai:
+      api-key: ${GEMINI_API_KEY}
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        options:
+          model: ${GEMINI_MODEL:gemini-2.0-flash}
+          temperature: ${GEMINI_TEMPERATURE:0.7}
+          max-tokens: ${GEMINI_MAX_TOKENS:2048}
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
     username: ${POSTGRES_USER}
@@ -10,8 +24,7 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-
-  jpa:
+  jpa:                              # ← dentro do spring, mesmo nível do datasource
     hibernate:
       ddl-auto: validate
     show-sql: false
@@ -22,13 +35,6 @@ spring:
           lob:
             non_contextual_creation: true
 
-# Google Gemini Configuration
-gemini:
-  api-key: ${GEMINI_API_KEY}
-  model: ${GEMINI_MODEL:gemini-1.5-flash}
-  max-tokens: ${GEMINI_MAX_TOKENS:2048}
-  temperature: ${GEMINI_TEMPERATURE:0.7}
-
 # WhatsApp Business API (Meta) Configuration
 whatsapp:
   api-url: ${WHATSAPP_API_URL:https://graph.facebook.com/v18.0}
@@ -38,12 +44,10 @@ whatsapp:
   verify-token: ${WHATSAPP_VERIFY_TOKEN}
   webhook-url: ${WHATSAPP_WEBHOOK_URL}
 
-# Application specific configs
 app:
   fitness:
     default-calorie-goal: 2000
     max-daily-meals: 10
-
   ai:
     system-prompt: |
       Você é um assistente fitness pessoal especializado em nutrição e exercícios.

@@ -56,3 +56,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:myfitnesspartner-secret-key-must-be-at-least-256-bits-long}
+  expiration: 86400000  # 24 horas em milissegundos

@@ -42,6 +42,9 @@ public class User {
     @Column(name = "whatsapp_number", nullable = false, unique = true, length = 20)
     private String whatsappNumber;
 
+    @Column(name = "password", nullable = false)
+    private String password;
+
     @NotNull(message = "Date of birth is required")
     @Past(message = "Date of birth must be in the past")
     @Column(name = "date_of_birth", nullable = false)

@@ -1,7 +1,6 @@
 package io.github.mrrenan.myfitnesspartner.presentation.controller;
 
 import io.github.mrrenan.myfitnesspartner.application.service.UserService;
-import io.github.mrrenan.myfitnesspartner.presentation.dto.CreateUserRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.UpdateUserRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,14 +23,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-
-    @PostMapping
-    @Operation(summary = "Create new user", description = "Register a new user in the system")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        log.info("POST /users - Creating user: {}", request.getWhatsappNumber());
-        UserResponse response = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 
     @GetMapping("/whatsapp/{whatsappNumber}")
     @Operation(summary = "Get user by WhatsApp", description = "Retrieve user information by WhatsApp number")

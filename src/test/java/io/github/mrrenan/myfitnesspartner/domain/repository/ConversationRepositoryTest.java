@@ -53,6 +53,7 @@ class ConversationRepositoryTest {
         user = userRepository.save(User.builder()
                 .name("Renan")
                 .whatsappNumber("+5511999999999")
+                .password("senha-teste")  // ← adiciona essa linha
                 .dateOfBirth(LocalDate.of(1994, 2, 18))
                 .gender(Gender.MALE)
                 .weight(93.0)
@@ -88,8 +89,6 @@ class ConversationRepositoryTest {
     @DisplayName("deve buscar conversa mais recente do usuário")
     void findFirstByUserOrderByCreatedAtDesc_shouldReturnLatestConversation() {
         // arrange
-        Conversation first = conversationRepository.save(
-                Conversation.builder().user(user).build());
         Conversation second = conversationRepository.save(
                 Conversation.builder().user(user).build());
 

@@ -37,6 +37,9 @@ dependencies {
     // Spring AI
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
+    // Twilio SDK
+    implementation 'com.twilio.sdk:twilio:10.1.0'
+
     // HTTP Client for WhatsApp API
     implementation 'org.springframework.boot:spring-boot-starter-webflux' // Para WebClient
 

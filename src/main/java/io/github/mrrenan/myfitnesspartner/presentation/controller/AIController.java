@@ -2,6 +2,7 @@ package io.github.mrrenan.myfitnesspartner.presentation.controller;
 
 import io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate;
 import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
+import io.github.mrrenan.myfitnesspartner.infrastructure.whatsapp.WhatsAppMessageSender;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,13 @@ import java.util.Map;
 public class AIController {
 
     private final FitnessAiPort fitnessAiPort;
+    private final WhatsAppMessageSender messageSender;
+
+    @PostMapping("/test-twilio")
+    public ResponseEntity<String> testTwilio() {
+        messageSender.sendMessage("+5511959074059", "Teste de conexão Twilio!");
+        return ResponseEntity.ok("Enviado!");
+    }
 
     @PostMapping("/calculate-calories")
     @Operation(

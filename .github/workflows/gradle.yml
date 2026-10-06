@@ -24,6 +24,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Garante que o wrapper é executável (foi commitado do Windows)
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
       # Compila o código principal e de teste
       - name: Compile
         run: ./gradlew compileJava compileTestJava

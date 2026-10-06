@@ -26,7 +26,10 @@ spring:
       max-lifetime: 1800000
   jpa:                              # ← dentro do spring, mesmo nível do datasource
     hibernate:
-      ddl-auto: validate
+      # 'update' deixa o Hibernate criar/atualizar as tabelas automaticamente.
+      # Para o MVP é suficiente; o ideal futuro é migrar para Flyway/Liquibase
+      # e voltar para 'validate'.
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:

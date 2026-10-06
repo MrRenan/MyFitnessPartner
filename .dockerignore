@@ -1,5 +1,9 @@
-# Build artifacts
-build/
+# Build artifacts — exclui tudo de build/ EXCETO o JAR executável,
+# que o CI compila e o Dockerfile precisa copiar.
+build/*
+!build/libs
+build/libs/*
+!build/libs/*.jar
 .gradle/
 out/
 bin/

@@ -1,0 +1,106 @@
+# ─────────────────────────────────────────────────────────
+# Docker Compose de PRODUÇÃO
+# Sobe a stack completa: aplicação + PostgreSQL + Redis.
+# Pensado para rodar numa VM (ex: Oracle Cloud ARM Ampere).
+#
+# Uso:
+#   1. Copie .env.prod.example para .env e preencha os valores reais
+#   2. docker compose -f docker-compose.prod.yml up -d --build
+# ─────────────────────────────────────────────────────────
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myfitnesspartner-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILE: prod
+      SERVER_PORT: 8080
+      # Limita o heap da JVM — VM tem ~1GB RAM, então contemos o consumo.
+      # MaxRAMPercentage=40 do limite de 512m do container ≈ ~205MB de heap.
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=40 -XX:InitialRAMPercentage=20 -XX:+UseSerialGC"
+      # Banco
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # IA — Gemini via Spring AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      # WhatsApp (opcional — só se for usar o webhook futuramente)
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_BUSINESS_ACCOUNT_ID: ${WHATSAPP_BUSINESS_ACCOUNT_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_WEBHOOK_URL: ${WHATSAPP_WEBHOOK_URL:-}
+    ports:
+      - "8080:8080"
+    # Limite de memória — usa SerialGC + heap contido para caber na VM pequena
+    mem_limit: 512m
+    mem_reservation: 384m
+    networks:
+      - myfitnesspartner-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: myfitnesspartner-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Postgres enxuto para VM pequena
+    command: >
+      postgres
+      -c shared_buffers=96MB
+      -c max_connections=30
+      -c effective_cache_size=256MB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    mem_limit: 256m
+    mem_reservation: 128m
+    networks:
+      - myfitnesspartner-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: myfitnesspartner-redis
+    restart: unless-stopped
+    # Redis com limite de memória e política de descarte
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    mem_limit: 96m
+    mem_reservation: 48m
+    networks:
+      - myfitnesspartner-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  myfitnesspartner-network:
+    driver: bridge

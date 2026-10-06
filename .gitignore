@@ -62,3 +62,9 @@ gradle-app.setting
 ### Application specific ###
 /uploads/
 /temp/
+
+### Agent artifacts ###
+.agents/
+
+### Local production secrets ###
+.env

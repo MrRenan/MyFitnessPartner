@@ -3,8 +3,10 @@ package io.github.mrrenan.myfitnesspartner.application.service;
 import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
 import io.github.mrrenan.myfitnesspartner.domain.exception.UserNotFoundException;
 import io.github.mrrenan.myfitnesspartner.domain.model.Conversation;
+import io.github.mrrenan.myfitnesspartner.domain.model.DailyGoal;
 import io.github.mrrenan.myfitnesspartner.domain.model.User;
 import io.github.mrrenan.myfitnesspartner.domain.repository.ConversationRepository;
+import io.github.mrrenan.myfitnesspartner.domain.repository.DailyGoalRepository;
 import io.github.mrrenan.myfitnesspartner.domain.repository.UserRepository;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatResponse;
@@ -15,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,6 +30,7 @@ public class ConversationServiceImpl implements ConversationService{
     private final UserRepository userRepository;
     private final FitnessAiPort fitnessAiPort;
     private final ConversationMapper conversationMapper;
+    private final DailyGoalRepository dailyGoalRepository;
 
     // Quantas mensagens anteriores enviar como contexto para a IA
     private static final int CONTEXT_MESSAGE_COUNT = 6;
@@ -93,8 +97,9 @@ public class ConversationServiceImpl implements ConversationService{
     }
 
     /**
-     * Monta o contexto para a IA: perfil do usuário + últimas N mensagens.
+     * Monta o contexto para a IA: perfil do usuário + progresso de hoje + últimas N mensagens.
      * O perfil garante que a IA nunca precise perguntar dados que já conhecemos.
+     * O progresso do dia garante que a IA use o saldo real de calorias, não o histórico de chat.
      */
     private String buildContext(Conversation conversation, User user) {
         StringBuilder sb = new StringBuilder();
@@ -109,6 +114,19 @@ public class ConversationServiceImpl implements ConversationService{
         sb.append("Objetivo: ").append(user.getGoalType().getDescription()).append("\n");
         sb.append("Meta calórica diária: ").append(user.getDailyCalorieGoal()).append(" kcal\n");
         sb.append("TDEE: ").append(Math.round(user.calculateTDEE())).append(" kcal\n");
+
+        // Progresso do dia atual — fonte de verdade para calorias (não o histórico de chat)
+        sb.append("\n=== PROGRESSO DE HOJE (").append(LocalDate.now()).append(") ===\n");
+        dailyGoalRepository.findByUserAndDate(user, LocalDate.now())
+                .ifPresentOrElse(
+                        goal -> {
+                            sb.append("Calorias consumidas hoje: ").append(goal.getCaloriesConsumed()).append(" kcal\n");
+                            sb.append("Meta do dia: ").append(goal.getCalorieGoal()).append(" kcal\n");
+                            sb.append("Saldo restante: ").append(goal.getRemainingCalories()).append(" kcal\n");
+                            sb.append("Refeições registradas: ").append(goal.getMealCount()).append("\n");
+                        },
+                        () -> sb.append("Nenhuma refeição registrada hoje ainda.\n")
+                );
 
         // Histórico recente de mensagens
         List<Conversation.Message> lastMessages = conversation.getLastMessages(CONTEXT_MESSAGE_COUNT);

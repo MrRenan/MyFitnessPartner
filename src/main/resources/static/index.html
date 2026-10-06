@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyFitnessPartner</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:      #22c55e;
+      --green-dark: #16a34a;
+      --green-light:#dcfce7;
+      --bg:         #0f172a;
+      --surface:    #1e293b;
+      --surface2:   #334155;
+      --text:       #f1f5f9;
+      --text-muted: #94a3b8;
+      --border:     #334155;
+      --radius:     12px;
+      --shadow:     0 4px 24px rgba(0,0,0,.4);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Auth Screen ── */
+    #auth-screen {
+      width: 100%;
+      max-width: 420px;
+      padding: 2rem 1.5rem;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+
+    .logo h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-top: .5rem;
+      color: var(--green);
+    }
+
+    .logo p {
+      color: var(--text-muted);
+      font-size: .9rem;
+      margin-top: .25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .tabs {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: .6rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      transition: all .2s;
+      background: var(--surface2);
+      color: var(--text-muted);
+    }
+
+    .tab-btn.active {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: .85rem;
+      color: var(--text-muted);
+      margin-bottom: .4rem;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: .95rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input:focus { border-color: var(--green); }
+    input::placeholder { color: var(--text-muted); }
+
+    .btn-primary {
+      width: 100%;
+      padding: .85rem;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: .5rem;
+      transition: background .2s;
+    }
+
+    .btn-primary:hover { background: var(--green-dark); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+    .disclaimer {
+      margin-top: 1.25rem;
+      padding: .75rem 1rem;
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 8px;
+      font-size: .78rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .error-msg {
+      color: #f87171;
+      font-size: .85rem;
+      margin-top: .5rem;
+      text-align: center;
+    }
+
+    /* ── Chat Screen ── */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 700px;
+      height: 100vh;
+      padding: 0;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.5rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .chat-header-icon { font-size: 1.8rem; }
+
+    .chat-header-info h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .chat-header-info p {
+      font-size: .78rem;
+      color: var(--text-muted);
+    }
+
+    .btn-logout {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: .4rem .9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .8rem;
+      transition: all .2s;
+    }
+
+    .btn-logout:hover { border-color: #f87171; color: #f87171; }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      scroll-behavior: smooth;
+    }
+
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.ai   { align-self: flex-start; align-items: flex-start; }
+
+    .msg-bubble {
+      padding: .75rem 1rem;
+      border-radius: 16px;
+      font-size: .92rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--green);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.ai .msg-bubble {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.ai .msg-bubble p {
+      margin: 0;
+    }
+
+    .msg.ai .msg-bubble p + p {
+      margin-top: .5rem;
+    }
+
+    .msg-time {
+      font-size: .7rem;
+      color: var(--text-muted);
+      margin-top: .25rem;
+      padding: 0 .25rem;
+    }
+
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+    }
+
+    .typing-indicator .msg-bubble {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: .75rem 1rem;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: bounce .9s infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: .15s; }
+    .dot:nth-child(3) { animation-delay: .3s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: .75rem;
+      padding: 1rem 1.5rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #msg-input {
+      flex: 1;
+      padding: .75rem 1rem;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: .95rem;
+      resize: none;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+      max-height: 120px;
+    }
+
+    #msg-input:focus { border-color: var(--green); }
+
+    .btn-send {
+      width: 44px; height: 44px;
+      flex-shrink: 0;
+      background: var(--green);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-end;
+      transition: background .2s;
+    }
+
+    .btn-send:hover { background: var(--green-dark); }
+    .btn-send:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-send svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* ── Onboarding chat overlay ── */
+    #onboarding-screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 700px;
+      height: 100vh;
+    }
+
+    .onboarding-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.5rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .onboarding-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .onboarding-header p {
+      font-size: .78rem;
+      color: var(--text-muted);
+    }
+
+    .onboarding-progress {
+      padding: .6rem 1.5rem;
+      background: rgba(34,197,94,.06);
+      border-bottom: 1px solid var(--border);
+      font-size: .8rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      #auth-screen { padding: 1.5rem 1rem; }
+      .card { padding: 1.5rem; }
+      .chat-header, .chat-input-area { padding: .75rem 1rem; }
+      .messages { padding: 1rem; }
+      .msg { max-width: 92%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ AUTH SCREEN ═══════════════════════════════ -->
+<div id="auth-screen">
+  <div class="logo">
+    <div class="logo-icon">💪</div>
+    <h1>MyFitnessPartner</h1>
+    <p>Seu parceiro de treino com IA</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Entrar</button>
+      <button class="tab-btn" onclick="switchTab('register')">Cadastrar</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Número de telefone</label>
+        <input id="login-phone" type="tel" placeholder="+5511999999999" />
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input id="login-password" type="password" placeholder="••••••" />
+      </div>
+      <div id="login-error" class="error-msg"></div>
+      <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+
+    <!-- Register form (just phone + password — rest via onboarding chat) -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label>Número de telefone</label>
+        <input id="reg-phone" type="tel" placeholder="+5511999999999" />
+      </div>
+      <div class="form-group">
+        <label>Escolha uma senha</label>
+        <input id="reg-password" type="password" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div id="reg-error" class="error-msg"></div>
+      <button class="btn-primary" onclick="startOnboarding()">Começar cadastro</button>
+    </div>
+
+    <div class="disclaimer">
+      ⚕️ O MyFitnessPartner é um assistente de apoio e não substitui médicos, nutricionistas ou profissionais de saúde.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ONBOARDING SCREEN ═══════════════════════════ -->
+<div id="onboarding-screen">
+  <div class="onboarding-header">
+    <div>
+      <h2>💪 Bem-vindo ao MyFitnessPartner!</h2>
+      <p>Vou te conhecer melhor para personalizar sua experiência</p>
+    </div>
+  </div>
+  <div class="onboarding-progress" id="onboarding-progress">
+    Respondendo algumas perguntas para criar seu perfil...
+  </div>
+  <div class="messages" id="onboarding-messages"></div>
+  <div class="chat-input-area">
+    <textarea id="onboarding-input" placeholder="Digite sua resposta..." rows="1"
+      onkeydown="handleOnboardingKey(event)"></textarea>
+    <button class="btn-send" onclick="sendOnboardingMessage()" id="onboarding-send-btn">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CHAT SCREEN ═══════════════════════════════ -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <div class="chat-header-icon">💪</div>
+    <div class="chat-header-info">
+      <h2>MyFitnessPartner</h2>
+      <p id="chat-subtitle">Seu parceiro fitness com IA</p>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sair</button>
+  </div>
+
+  <div class="messages" id="chat-messages">
+    <div class="typing-indicator" id="typing">
+      <div class="msg-bubble ai">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <textarea id="msg-input" placeholder="Digite uma mensagem..." rows="1"
+      onkeydown="handleChatKey(event)"></textarea>
+    <button class="btn-send" onclick="sendChatMessage()" id="send-btn">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  // ═══════════════════════════════════════════════════════
+  // Config
+  // ═══════════════════════════════════════════════════════
+  const API_BASE = '/api';
+
+  // ═══════════════════════════════════════════════════════
+  // State
+  // ═══════════════════════════════════════════════════════
+  let session = {
+    token: null,
+    whatsappNumber: null,
+    name: null,
+  };
+
+  // Onboarding state
+  let onboarding = {
+    phoneNumber: null,
+    password: null,
+  };
+
+  // ═══════════════════════════════════════════════════════
+  // Init
+  // ═══════════════════════════════════════════════════════
+  (function init() {
+    const saved = localStorage.getItem('mfp_session');
+    if (saved) {
+      try {
+        session = JSON.parse(saved);
+        showChat();
+      } catch {
+        localStorage.removeItem('mfp_session');
+      }
+    }
+  })();
+
+  // ═══════════════════════════════════════════════════════
+  // Tab switching
+  // ═══════════════════════════════════════════════════════
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) =>
+      b.classList.toggle('active', (tab === 'login' ? 0 : 1) === i));
+    document.getElementById('login-form').style.display  = tab === 'login'    ? '' : 'none';
+    document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Auth — Login
+  // ═══════════════════════════════════════════════════════
+  async function doLogin() {
+    const phone    = document.getElementById('login-phone').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    errEl.textContent = '';
+
+    if (!phone || !password) {
+      errEl.textContent = 'Preencha todos os campos.';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsappNumber: phone, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        errEl.textContent = data.message || 'Credenciais inválidas.';
+        return;
+      }
+
+      saveSession(data.token, data.whatsappNumber, data.name);
+      showChat();
+    } catch {
+      errEl.textContent = 'Erro de conexão. Tente novamente.';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Onboarding
+  // ═══════════════════════════════════════════════════════
+  async function startOnboarding() {
+    const phone    = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const errEl    = document.getElementById('reg-error');
+    errEl.textContent = '';
+
+    if (!phone) { errEl.textContent = 'Informe seu número de telefone.'; return; }
+    if (password.length < 6) { errEl.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
+
+    onboarding.phoneNumber = phone;
+    onboarding.password    = password;
+
+    showOnboarding();
+
+    // Primeira mensagem para iniciar o onboarding
+    await callOnboarding('Olá! Quero me cadastrar no MyFitnessPartner.');
+  }
+
+  async function sendOnboardingMessage() {
+    const input = document.getElementById('onboarding-input');
+    const text  = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    autoResize(input);
+
+    appendOnboardingMsg('user', text);
+    setOnboardingSending(true);
+
+    await callOnboarding(text);
+  }
+
+  async function callOnboarding(message) {
+    try {
+      appendOnboardingTyping();
+
+      const res = await fetch(`${API_BASE}/onboarding/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: onboarding.phoneNumber,
+          password:    onboarding.password,
+          message,
+        }),
+      });
+
+      removeOnboardingTyping();
+      const data = await res.json();
+
+      if (!res.ok) {
+        appendOnboardingMsg('ai', '⚠️ ' + (data.message || 'Algo deu errado. Tente novamente.'));
+        setOnboardingSending(false);
+        return;
+      }
+
+      appendOnboardingMsg('ai', data.aiMessage);
+
+      if (data.status === 'COMPLETED') {
+        document.getElementById('onboarding-progress').textContent = '✅ Cadastro concluído! Entrando...';
+        setTimeout(() => {
+          saveSession(data.token, data.whatsappNumber, data.name);
+          showChat(data.aiMessage); // passa mensagem de boas-vindas para o chat
+        }, 1200);
+        return;
+      }
+
+      if (data.status === 'ERROR') {
+        appendOnboardingMsg('ai', '⚠️ ' + data.aiMessage);
+      }
+
+    } catch {
+      removeOnboardingTyping();
+      appendOnboardingMsg('ai', '⚠️ Erro de conexão. Tente novamente.');
+    }
+
+    setOnboardingSending(false);
+  }
+
+  function appendOnboardingMsg(role, text) {
+    const container = document.getElementById('onboarding-messages');
+    const div = buildMsgEl(role, text);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function appendOnboardingTyping() {
+    const container = document.getElementById('onboarding-messages');
+    const div = document.createElement('div');
+    div.id = 'ob-typing';
+    div.className = 'msg ai typing-indicator';
+    div.style.display = 'flex';
+    div.innerHTML = `<div class="msg-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeOnboardingTyping() {
+    document.getElementById('ob-typing')?.remove();
+  }
+
+  function setOnboardingSending(sending) {
+    document.getElementById('onboarding-send-btn').disabled = sending;
+    document.getElementById('onboarding-input').disabled    = sending;
+  }
+
+  function handleOnboardingKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendOnboardingMessage();
+    }
+    autoResize(e.target);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Chat
+  // ═══════════════════════════════════════════════════════
+  async function sendChatMessage() {
+    const input = document.getElementById('msg-input');
+    const text  = input.value.trim();
+    if (!text || !session.token) return;
+
+    input.value = '';
+    autoResize(input);
+
+    appendChatMsg('user', text);
+    showTyping(true);
+    document.getElementById('send-btn').disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/conversations/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.token}`,
+        },
+        body: JSON.stringify({
+          whatsappNumber: session.whatsappNumber,
+          message: text,
+        }),
+      });
+
+      showTyping(false);
+      const data = await res.json();
+
+      if (res.status === 401) {
+        doLogout();
+        return;
+      }
+
+      if (!res.ok) {
+        appendChatMsg('ai', '⚠️ ' + (data.message || 'Algo deu errado. Tente novamente.'));
+        return;
+      }
+
+      appendChatMsg('ai', data.aiResponse);
+
+    } catch {
+      showTyping(false);
+      appendChatMsg('ai', '⚠️ Erro de conexão. Verifique sua internet e tente novamente.');
+    } finally {
+      document.getElementById('send-btn').disabled = false;
+    }
+  }
+
+  function appendChatMsg(role, text) {
+    const container = document.getElementById('chat-messages');
+    const typing    = document.getElementById('typing');
+    container.insertBefore(buildMsgEl(role, text), typing);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
+    autoResize(e.target);
+  }
+
+  function showTyping(show) {
+    document.getElementById('typing').style.display = show ? 'flex' : 'none';
+    const container = document.getElementById('chat-messages');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Session helpers
+  // ═══════════════════════════════════════════════════════
+  function saveSession(token, whatsappNumber, name) {
+    session = { token, whatsappNumber, name };
+    localStorage.setItem('mfp_session', JSON.stringify(session));
+  }
+
+  function doLogout() {
+    if (session.token) {
+      fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.token}` },
+      }).catch(() => {});
+    }
+    session = { token: null, whatsappNumber: null, name: null };
+    localStorage.removeItem('mfp_session');
+    showAuth();
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Screen switching
+  // ═══════════════════════════════════════════════════════
+  function showAuth() {
+    document.getElementById('auth-screen').style.display      = '';
+    document.getElementById('onboarding-screen').style.display = 'none';
+    document.getElementById('chat-screen').style.display      = 'none';
+    document.body.style.alignItems = 'center';
+  }
+
+  function showOnboarding() {
+    document.getElementById('auth-screen').style.display      = 'none';
+    document.getElementById('onboarding-screen').style.display = 'flex';
+    document.getElementById('chat-screen').style.display      = 'none';
+    document.body.style.alignItems = 'stretch';
+  }
+
+  function showChat(welcomeMessage) {
+    document.getElementById('auth-screen').style.display      = 'none';
+    document.getElementById('onboarding-screen').style.display = 'none';
+    document.getElementById('chat-screen').style.display      = 'flex';
+    document.body.style.alignItems = 'stretch';
+
+    const subtitle = document.getElementById('chat-subtitle');
+    subtitle.textContent = session.name ? `Olá, ${session.name}! 👋` : 'Seu parceiro fitness com IA';
+
+    // Se veio mensagem de boas-vindas do onboarding, mostra no chat
+    if (welcomeMessage) {
+      setTimeout(() => appendChatMsg('ai', welcomeMessage), 300);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Helpers
+  // ═══════════════════════════════════════════════════════
+  function buildMsgEl(role, text) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `msg ${role}`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+
+    // Apenas mensagens da IA recebem formatação markdown
+    if (role === 'ai') {
+      bubble.innerHTML = parseMarkdown(text);
+    } else {
+      bubble.textContent = text;
+    }
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    wrapper.appendChild(bubble);
+    wrapper.appendChild(time);
+    return wrapper;
+  }
+
+  /**
+   * Parser leve de markdown para as respostas da IA.
+   * Suporta: negrito (**texto**), itálico (*texto*) e quebras de linha.
+   * Listas com hífens não são convertidas — aparecem como texto com hífen.
+   * Escapa HTML antes de processar para evitar XSS.
+   */
+  function parseMarkdown(text) {
+    // 1. Escapa HTML (segurança — evita XSS)
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // 2. Negrito: **texto** → <strong>texto</strong>
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // 3. Itálico: *texto* → <em>texto</em>  (só asterisco simples que não seja duplo)
+    html = html.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+
+    // 4. Quebras de linha dupla → parágrafo
+    html = html.replace(/\n{2,}/g, '</p><p>');
+
+    // 5. Quebra de linha simples → <br>
+    html = html.replace(/\n/g, '<br>');
+
+    // 6. Wrap no parágrafo externo
+    html = '<p>' + html + '</p>';
+
+    return html;
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+</script>
+</body>
+</html>

@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -51,8 +50,8 @@ public class ConversationServiceImpl implements ConversationService{
         // 3. Adiciona mensagem do usuário
         conversation.addUserMessage(request.getMessage());
 
-        // 4. Monta contexto com últimas mensagens
-        String context = buildContext(conversation);
+        // 4. Monta contexto com perfil do usuário + últimas mensagens
+        String context = buildContext(conversation, user);
 
         // 5. Chama a IA
         log.debug("Calling AI with context of {} messages", CONTEXT_MESSAGE_COUNT);
@@ -94,18 +93,33 @@ public class ConversationServiceImpl implements ConversationService{
     }
 
     /**
-     * Monta o contexto das últimas N mensagens para enviar para a IA
+     * Monta o contexto para a IA: perfil do usuário + últimas N mensagens.
+     * O perfil garante que a IA nunca precise perguntar dados que já conhecemos.
      */
-    private String buildContext(Conversation conversation) {
-        List<Conversation.Message> lastMessages = conversation.getLastMessages(CONTEXT_MESSAGE_COUNT);
+    private String buildContext(Conversation conversation, User user) {
+        StringBuilder sb = new StringBuilder();
 
-        if (lastMessages.isEmpty()) {
-            return "";
+        // Perfil do usuário — sempre presente no contexto
+        sb.append("=== PERFIL DO USUÁRIO ===\n");
+        sb.append("Nome: ").append(user.getName()).append("\n");
+        sb.append("Peso: ").append(user.getWeight()).append(" kg\n");
+        sb.append("Altura: ").append(user.getHeight()).append(" cm\n");
+        sb.append("Sexo: ").append(user.getGender().getDescription()).append("\n");
+        sb.append("Nível de atividade: ").append(user.getActivityLevel().getDescription()).append("\n");
+        sb.append("Objetivo: ").append(user.getGoalType().getDescription()).append("\n");
+        sb.append("Meta calórica diária: ").append(user.getDailyCalorieGoal()).append(" kcal\n");
+        sb.append("TDEE: ").append(Math.round(user.calculateTDEE())).append(" kcal\n");
+
+        // Histórico recente de mensagens
+        List<Conversation.Message> lastMessages = conversation.getLastMessages(CONTEXT_MESSAGE_COUNT);
+        if (!lastMessages.isEmpty()) {
+            sb.append("\n=== HISTÓRICO DA CONVERSA ===\n");
+            lastMessages.stream()
+                    .map(m -> m.getRole().toUpperCase() + ": " + m.getContent())
+                    .forEach(line -> sb.append(line).append("\n"));
         }
 
-        return lastMessages.stream()
-                .map(m -> m.getRole().toUpperCase() + ": " + m.getContent())
-                .collect(Collectors.joining("\n"));
+        return sb.toString().trim();
     }
 
     private User findUserByWhatsapp(String whatsappNumber) {

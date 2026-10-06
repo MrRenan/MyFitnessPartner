@@ -2,6 +2,7 @@ package io.github.mrrenan.myfitnesspartner.infrastructure.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate;
+import io.github.mrrenan.myfitnesspartner.infrastructure.config.AppProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,12 +10,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClient.Builder;
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
+import org.springframework.ai.chat.client.ChatClient.CallResponseSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import static org.springframework.ai.chat.client.ChatClient.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SpringAiAdapter")
@@ -24,6 +28,8 @@ class SpringAiAdapterTest {
     @Mock private ChatClient chatClient;
     @Mock private ChatClientRequestSpec requestSpec;
     @Mock private CallResponseSpec callResponseSpec;
+    @Mock private AppProperties appProperties;
+    @Mock private AppProperties.Ai aiProperties;
 
     private SpringAiAdapter springAiAdapter;
     private ObjectMapper objectMapper;
@@ -33,12 +39,15 @@ class SpringAiAdapterTest {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
 
+        lenient().when(appProperties.getAi()).thenReturn(aiProperties);
+        lenient().when(aiProperties.getSystemPrompt()).thenReturn("System prompt de teste");
+
         when(chatClientBuilder.defaultSystem(any(String.class)))
                 .thenReturn(chatClientBuilder);
         when(chatClientBuilder.build())
                 .thenReturn(chatClient);
 
-        springAiAdapter = new SpringAiAdapter(chatClientBuilder, objectMapper);
+        springAiAdapter = new SpringAiAdapter(chatClientBuilder, objectMapper, appProperties);
     }
 
     @Test

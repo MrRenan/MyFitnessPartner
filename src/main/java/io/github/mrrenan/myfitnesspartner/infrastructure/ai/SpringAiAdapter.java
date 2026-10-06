@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate;
 import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
+import io.github.mrrenan.myfitnesspartner.infrastructure.config.AppProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
@@ -15,9 +16,11 @@ public class SpringAiAdapter implements FitnessAiPort {
     private final ChatClient chatClient;
     private final ObjectMapper objectMapper;
 
-    public SpringAiAdapter(ChatClient.Builder builder, ObjectMapper objectMapper) {
+    public SpringAiAdapter(ChatClient.Builder builder,
+                           ObjectMapper objectMapper,
+                           AppProperties appProperties) {
         this.chatClient = builder
-                .defaultSystem("Você é um assistente fitness. Responda sempre em português.")
+                .defaultSystem(appProperties.getAi().getSystemPrompt())
                 .build();
         this.objectMapper = objectMapper;
     }
@@ -77,7 +80,7 @@ public class SpringAiAdapter implements FitnessAiPort {
 
         } catch (Exception e) {
             log.error("Erro ao parsear resposta da IA: {}", response, e);
-            return createFallbackEstimate(response); // ← aproveita o fallback
+            return createFallbackEstimate(response);
         }
     }
 

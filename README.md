@@ -9,13 +9,13 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> Assistente fitness pessoal via WhatsApp, powered by Google Gemini AI
+> Assistente fitness pessoal via chat web, powered by Google Gemini AI
 
 ## 📋 Sobre o Projeto
 
-MyFitnessPartner é uma API backend que integra **WhatsApp com Inteligência Artificial** para auxiliar usuários em sua jornada fitness. Através de conversas naturais pelo WhatsApp, os usuários podem calcular calorias de refeições, acompanhar metas diárias e receber orientações personalizadas.
+MyFitnessPartner é uma API backend que integra **chat web com Inteligência Artificial** para auxiliar usuários em sua jornada fitness. Através de conversas naturais pelo chat web, os usuários podem calcular calorias de refeições, acompanhar metas diárias e receber orientações personalizadas.
 
-O projeto demonstra a implementação de uma arquitetura moderna utilizando as melhores práticas do ecossistema Java/Spring, incluindo **Spring AI**, **JWT com blacklist em Redis**, **Testcontainers** e integração real com WhatsApp via Twilio.
+O projeto demonstra a implementação de uma arquitetura moderna utilizando as melhores práticas do ecossistema Java/Spring, incluindo **Spring AI**, **JWT com blacklist em Redis** e **Testcontainers**.
 
 ## 🏗️ Arquitetura
 
@@ -23,12 +23,12 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
                     ┌─────────────────────────────────────┐
                     │         MyFitnessPartner API         │
                     │                                     │
- WhatsApp  ◄──────► │  ┌──────────┐    ┌──────────────┐  │
- (Twilio)           │  │ Webhook  │    │  REST API    │  │
-                    │  │ Handler  │    │  Controllers │  │
-                    │  └────┬─────┘    └──────┬───────┘  │
-                    │       │                 │           │
-                    │  ┌────▼─────────────────▼───────┐  │
+ Chat Web  ◄──────► │                   ┌──────────────┐  │
+ (Frontend)         │                   │  REST API    │  │
+                    │                   │  Controllers │  │
+                    │                   └──────┬───────┘  │
+                    │                          │           │
+                    │  ┌───────────────────────▼───────┐  │
                     │  │      Application Services     │  │
                     │  │  Auth │ Meals │ Goals │ Chat  │  │
                     │  └────┬──────────────────────────┘  │
@@ -53,7 +53,7 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
 - **Arquitetura em camadas** — separação clara entre `presentation`, `application`, `domain` e `infrastructure`
 - **Spring AI com abstração de provedor** — `FitnessAiPort` desacopla o domínio do provedor de IA (hoje Gemini, amanhã qualquer outro)
 - **JWT stateless com blacklist no Redis** — logout real sem sessão no servidor
-- **Processamento assíncrono** — webhook retorna 200 imediatamente, IA processa em background via `@Async`
+- **Chat web via REST** — o frontend consome os endpoints REST para conversar com a IA
 
 ## 🚀 Tecnologias
 
@@ -76,7 +76,6 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
 | Serviço | Uso |
 |---|---|
 | Google Gemini 2.0 Flash | LLM para análise nutricional e chat |
-| Twilio WhatsApp | Envio e recebimento de mensagens |
 
 ### Testes & Qualidade
 | Tecnologia | Uso |
@@ -95,9 +94,7 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
 
 - Java 21+
 - Docker & Docker Compose
-- Conta Twilio com sandbox WhatsApp
 - Google AI Studio API Key (Gemini)
-- ngrok (para desenvolvimento local com webhook)
 
 ## ⚙️ Como Rodar Localmente
 
@@ -136,11 +133,6 @@ spring:
 jwt:
   secret: sua-chave-secreta-minimo-256-bits
   expiration: 86400000
-
-twilio:
-  account-sid: SEU_ACCOUNT_SID
-  auth-token: SEU_AUTH_TOKEN
-  whatsapp-number: whatsapp:+14155238886
 ```
 
 ### 4. Execute a aplicação
@@ -152,14 +144,8 @@ A API estará disponível em: `http://localhost:8080/api`
 
 Documentação Swagger: `http://localhost:8080/api/swagger-ui.html`
 
-### 5. Configure o webhook (WhatsApp)
-```bash
-# Em outro terminal
-ngrok http 8080
-
-# Configure no Twilio Sandbox Settings:
-# https://SEU_NGROK.ngrok-free.app/api/webhook/whatsapp
-```
+### 5. Acesse o chat web
+Abra `http://localhost:8080/` no navegador — a interface de chat consome os endpoints REST.
 
 ## 🧪 Testes
 
@@ -214,7 +200,7 @@ POST /api/daily-goals/reset     → Reseta contagem do dia
 POST /api/ai/calculate-calories   → Calcula calorias de uma descrição
 ```
 
-> Todos os endpoints (exceto `/auth/**`, `/health` e `/webhook/**`) requerem `Authorization: Bearer <token>`
+> Todos os endpoints (exceto `/auth/**` e `/health`) requerem `Authorization: Bearer <token>`
 
 ## 📁 Estrutura do Projeto
 
@@ -237,14 +223,10 @@ src/main/java/io/github/mrrenan/myfitnesspartner/
 │   ├── ai/
 │   │   └── SpringAiAdapter.java        # Implementa FitnessAiPort via Spring AI
 │   ├── config/                         # Configurações Spring
-│   ├── security/
-│   │   ├── JwtService.java             # Geração e validação JWT + blacklist Redis
-│   │   ├── JwtAuthenticationFilter.java
-│   │   └── SecurityConfig.java
-│   └── whatsapp/
-│       ├── WhatsAppWebhookController.java
-│       ├── WhatsAppWebhookHandler.java  # Processamento assíncrono
-│       └── WhatsAppMessageSender.java   # Envio via Twilio SDK
+│   └── security/
+│       ├── JwtService.java             # Geração e validação JWT + blacklist Redis
+│       ├── JwtAuthenticationFilter.java
+│       └── SecurityConfig.java
 └── presentation/
     ├── controller/                      # REST Controllers
     ├── dto/                             # Request/Response DTOs
@@ -260,7 +242,7 @@ src/main/java/io/github/mrrenan/myfitnesspartner/
 - [x] Acompanhamento de metas diárias
 - [x] Histórico de conversas com contexto para a IA
 - [x] Integração Spring AI + Google Gemini
-- [x] Webhook WhatsApp via Twilio
+- [x] Chat web consumindo a API REST
 - [x] Testes unitários e de integração com Testcontainers
 
 ### 🚧 Fase 2 — Escalabilidade (Planejada)

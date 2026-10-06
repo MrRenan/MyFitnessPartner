@@ -6,10 +6,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
- * MyFitnessPartner - Your AI-powered fitness partner via WhatsApp
+ * MyFitnessPartner - Your AI-powered fitness partner via web chat
  * Main application class that bootstraps the Spring Boot application.
  * Features:
- * - WhatsApp Business API integration for messaging
+ * - Web chat powered by the REST API
  * - Google Gemini AI for intelligent responses
  * - Calorie calculation and meal tracking
  * - Fitness goal management and progress tracking

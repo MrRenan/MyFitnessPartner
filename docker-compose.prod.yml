@@ -10,9 +10,9 @@
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Imagem pré-construída publicada no GitHub Container Registry pelo CI/CD.
+    # A VM só faz pull — não compila nada localmente.
+    image: ghcr.io/mrrenan/myfitnesspartner:latest
     container_name: myfitnesspartner-app
     restart: unless-stopped
     depends_on:

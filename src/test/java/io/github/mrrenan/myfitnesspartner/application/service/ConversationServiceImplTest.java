@@ -2,10 +2,16 @@ package io.github.mrrenan.myfitnesspartner.application.service;
 
 import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
 import io.github.mrrenan.myfitnesspartner.domain.exception.UserNotFoundException;
+import io.github.mrrenan.myfitnesspartner.domain.model.ActivityLevel;
 import io.github.mrrenan.myfitnesspartner.domain.model.Conversation;
+import io.github.mrrenan.myfitnesspartner.domain.model.Gender;
+import io.github.mrrenan.myfitnesspartner.domain.model.GoalType;
 import io.github.mrrenan.myfitnesspartner.domain.model.User;
 import io.github.mrrenan.myfitnesspartner.domain.repository.ConversationRepository;
+import io.github.mrrenan.myfitnesspartner.domain.repository.DailyGoalRepository;
 import io.github.mrrenan.myfitnesspartner.domain.repository.UserRepository;
+
+import java.time.LocalDate;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatRequest;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ChatResponse;
 import io.github.mrrenan.myfitnesspartner.presentation.dto.ConversationResponse;
@@ -34,6 +40,7 @@ class ConversationServiceImplTest {
     @Mock private UserRepository userRepository;
     @Mock private FitnessAiPort fitnessAiPort;
     @Mock private ConversationMapper conversationMapper;
+    @Mock private DailyGoalRepository dailyGoalRepository;
 
     @InjectMocks
     private ConversationServiceImpl conversationService;
@@ -43,10 +50,18 @@ class ConversationServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        // Perfil completo — o buildContext() usa peso, altura, gênero, TDEE etc.
         user = User.builder()
                 .id(1L)
                 .name("Renan")
                 .whatsappNumber("+5511999999999")
+                .dateOfBirth(LocalDate.of(1995, 3, 15))
+                .gender(Gender.MALE)
+                .weight(80.0)
+                .height(180.0)
+                .activityLevel(ActivityLevel.MODERATELY_ACTIVE)
+                .goalType(GoalType.LOSE_WEIGHT)
+                .dailyCalorieGoal(2200)
                 .isActive(true)
                 .build();
 
@@ -64,6 +79,8 @@ class ConversationServiceImplTest {
                 .thenReturn(Optional.of(user));
         when(conversationRepository.findFirstByUserOrderByCreatedAtDesc(user))
                 .thenReturn(Optional.empty()); // sem conversa anterior
+        when(dailyGoalRepository.findByUserAndDate(any(), any()))
+                .thenReturn(Optional.empty()); // sem refeições registradas hoje
         when(fitnessAiPort.chat(any(), any()))
                 .thenReturn("Sim, está dentro da meta!");
         when(conversationRepository.save(any()))
@@ -101,6 +118,8 @@ class ConversationServiceImplTest {
                 .thenReturn(Optional.of(user));
         when(conversationRepository.findFirstByUserOrderByCreatedAtDesc(user))
                 .thenReturn(Optional.of(existingConversation));
+        when(dailyGoalRepository.findByUserAndDate(any(), any()))
+                .thenReturn(Optional.empty()); // sem refeições registradas hoje
         when(fitnessAiPort.chat(any(), any()))
                 .thenReturn("Resposta da IA");
         when(conversationRepository.save(any()))

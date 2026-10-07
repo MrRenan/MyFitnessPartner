@@ -40,8 +40,9 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       # JWT
       JWT_SECRET: ${JWT_SECRET}
-    ports:
-      - "8080:8080"
+    # Não expõe mais a 8080 para fora — só o Nginx acessa a app pela rede interna.
+    expose:
+      - "8080"
     # Limite de memória — usa SerialGC + heap contido para caber na VM pequena
     mem_limit: 512m
     mem_reservation: 384m
@@ -91,8 +92,50 @@ services:
       timeout: 5s
       retries: 5
 
+  # ─────────────────────────────────────────────────────────
+  # Nginx — reverse proxy + terminação TLS.
+  # Único serviço exposto à internet (portas 80 e 443).
+  # Encaminha para a app na rede interna e bloqueia /actuator externamente.
+  # ─────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: myfitnesspartner-nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    mem_limit: 64m
+    networks:
+      - myfitnesspartner-network
+
+  # ─────────────────────────────────────────────────────────
+  # Certbot — emite e renova o certificado Let's Encrypt.
+  # Compartilha volumes com o Nginx (certificados + desafio ACME).
+  # ─────────────────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    container_name: myfitnesspartner-certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Renova a cada 12h se estiver perto de expirar (entrypoint padrão só roda uma vez;
+    # este loop mantém o container renovando sozinho).
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - myfitnesspartner-network
+
 volumes:
   postgres_data:
+    driver: local
+  certbot_conf:
+    driver: local
+  certbot_www:
     driver: local
 
 networks:

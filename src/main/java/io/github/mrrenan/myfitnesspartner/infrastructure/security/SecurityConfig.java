@@ -36,7 +36,8 @@ public class SecurityConfig {
             "/users/**",          // ← temporário para MVP
             "/meals/**",          // ← temporário para MVP
             "/daily-goals/**",    // ← temporário para MVP
-            "/ai/**"
+            "/ai/**",
+            "/actuator/**"        // health, metrics, prometheus (monitoramento)
             // Recursos estáticos (HTML, JS, CSS) são tratados pelo webSecurityCustomizer abaixo
     };
 

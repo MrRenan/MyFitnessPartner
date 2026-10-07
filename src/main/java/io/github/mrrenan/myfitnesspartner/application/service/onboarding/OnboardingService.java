@@ -148,18 +148,33 @@ public class OnboardingService {
     }
 
     /**
-     * Tenta fazer parse do JSON de conclusão retornado pela IA.
-     * Retorna null se a resposta não for um JSON de conclusão.
+     * Tenta extrair e fazer parse do JSON de conclusão da resposta da IA.
+     *
+     * A IA nem sempre obedece a instrução de retornar APENAS o JSON — às vezes
+     * manda texto conversacional antes/depois ou envolve em ```json. Então, em
+     * vez de exigir que a resposta comece com '{', localizamos o primeiro objeto
+     * JSON que contenha "onboarding_complete". Isso evita que o JSON cru vaze
+     * para a tela do usuário.
+     *
+     * Retorna null se não houver JSON de conclusão válido.
      */
     private OnboardingCompletion tryParseCompletion(String aiResponse) {
+        // Atalho: só vale a pena procurar se o marcador estiver presente
+        if (aiResponse == null || !aiResponse.contains("onboarding_complete")) {
+            return null;
+        }
+
+        // Localiza o trecho entre o primeiro '{' e o último '}' (o objeto JSON),
+        // ignorando qualquer texto que a IA tenha colocado em volta.
+        int start = aiResponse.indexOf('{');
+        int end = aiResponse.lastIndexOf('}');
+        if (start < 0 || end <= start) {
+            return null;
+        }
+        String json = aiResponse.substring(start, end + 1);
+
         try {
-            // Remove markdown code blocks se presentes
-            String clean = aiResponse.replaceAll("```json|```", "").trim();
-
-            // Só tenta parsear se parecer JSON
-            if (!clean.startsWith("{")) return null;
-
-            JsonNode node = objectMapper.readTree(clean);
+            JsonNode node = objectMapper.readTree(json);
 
             if (!node.path("onboarding_complete").asBoolean(false)) return null;
 
@@ -174,7 +189,7 @@ public class OnboardingService {
                     node.path("message").asText()
             );
         } catch (Exception e) {
-            log.debug("Resposta da IA não é JSON de conclusão: {}", e.getMessage());
+            log.debug("Marcador onboarding_complete presente, mas JSON inválido: {}", e.getMessage());
             return null;
         }
     }
@@ -208,7 +223,7 @@ public class OnboardingService {
 
             return OnboardingResponse.builder()
                     .status(OnboardingResponse.Status.COMPLETED)
-                    .aiMessage(completion.welcomeMessage())
+                    .aiMessage(buildWelcomeMessage(saved))
                     .token(token)
                     .whatsappNumber(saved.getWhatsappNumber())
                     .name(saved.getName())
@@ -221,6 +236,46 @@ public class OnboardingService {
                     .aiMessage("Ocorreu um erro ao finalizar seu cadastro. Tente novamente.")
                     .build();
         }
+    }
+
+    /**
+     * Monta a mensagem de boas-vindas com o plano calórico calculado.
+     * Usa os números determinísticos do User (TDEE e meta via Mifflin-St Jeor),
+     * garantindo precisão — não depende do texto gerado pela IA.
+     */
+    private String buildWelcomeMessage(User user) {
+        long tdee = Math.round(user.calculateTDEE());
+        int goal = user.getDailyCalorieGoal();
+        String objetivo = user.getGoalType().getDescription().toLowerCase();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Tudo pronto, ").append(firstName(user.getName())).append("! 💪 Seu perfil está completo.\n\n");
+        sb.append("**Seu plano personalizado:**\n");
+        sb.append("- Gasto energético diário (TDEE): **").append(tdee).append(" kcal**\n");
+        sb.append("- Meta diária para **").append(objetivo).append("**: **").append(goal).append(" kcal**\n\n");
+
+        // Explica a lógica do ajuste conforme o objetivo
+        int ajuste = user.getGoalType().getCalorieAdjustment();
+        if (ajuste < 0) {
+            sb.append("Ajustei ").append(Math.abs(ajuste))
+              .append(" kcal abaixo do seu gasto para um emagrecimento saudável e sustentável. ");
+        } else if (ajuste > 0) {
+            sb.append("Ajustei ").append(ajuste)
+              .append(" kcal acima do seu gasto para apoiar o ganho de massa. ");
+        } else {
+            sb.append("Sua meta está alinhada ao seu gasto, para manter o peso atual. ");
+        }
+
+        sb.append("Agora é só me contar o que você come que eu calculo as calorias e acompanho seu dia. ")
+          .append("Bora começar? 🚀");
+
+        return sb.toString();
+    }
+
+    /** Retorna o primeiro nome, para um tom mais pessoal. */
+    private String firstName(String fullName) {
+        if (fullName == null || fullName.isBlank()) return "";
+        return fullName.trim().split("\\s+")[0];
     }
 
     private void cleanExpiredSessions() {

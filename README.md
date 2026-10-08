@@ -11,6 +11,8 @@
 
 > Assistente fitness pessoal via chat web, powered by Google Gemini AI
 
+🌐 **Demo ao vivo:** [fitness.renanleite.dev.br](https://fitness.renanleite.dev.br)
+
 ## 📋 Sobre o Projeto
 
 MyFitnessPartner é uma API backend que integra **chat web com Inteligência Artificial** para auxiliar usuários em sua jornada fitness. Através de conversas naturais pelo chat web, os usuários podem calcular calorias de refeições, acompanhar metas diárias e receber orientações personalizadas.
@@ -75,7 +77,7 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
 ### Integrações Externas
 | Serviço | Uso |
 |---|---|
-| Google Gemini 2.0 Flash | LLM para análise nutricional e chat |
+| Google Gemini 2.5 Flash | LLM para análise nutricional e chat |
 
 ### Testes & Qualidade
 | Tecnologia | Uso |
@@ -87,8 +89,12 @@ O projeto demonstra a implementação de uma arquitetura moderna utilizando as m
 ### DevOps
 | Tecnologia | Uso |
 |---|---|
-| Docker + Docker Compose | Containerização local |
-| GitHub Actions | CI/CD |
+| Docker + Docker Compose | Containerização (local e produção) |
+| GitHub Actions | CI (testes) + CD (build de imagem → ghcr.io → deploy na VM) |
+| GitHub Container Registry | Registry da imagem de produção |
+| Nginx | Reverse proxy + terminação TLS + rate limiting |
+| Let's Encrypt | Certificado HTTPS com renovação automática |
+| Oracle Cloud (Always Free) | VM de produção |
 
 ## 📦 Pré-requisitos
 
@@ -124,7 +130,7 @@ spring:
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
       chat:
         options:
-          model: gemini-2.0-flash
+          model: gemini-2.5-flash
   data:
     redis:
       host: localhost
@@ -145,7 +151,64 @@ A API estará disponível em: `http://localhost:8080/api`
 Documentação Swagger: `http://localhost:8080/api/swagger-ui.html`
 
 ### 5. Acesse o chat web
-Abra `http://localhost:8080/` no navegador — a interface de chat consome os endpoints REST.
+Abra `http://localhost:8080/api/index.html` no navegador — a interface de chat consome os endpoints REST.
+
+## ☁️ Deploy em Produção
+
+A aplicação roda em produção numa VM **Oracle Cloud (Always Free)**, com deploy automatizado.
+
+### Fluxo de CI/CD
+
+```
+git push origin main
+      │
+      ├─► Java CI (gradle.yml)          → compila + testes unitários
+      │
+      └─► Build & Deploy (deploy.yml)
+             ├─ compila o JAR (bootJar)
+             ├─ builda a imagem Docker
+             ├─ publica em ghcr.io/mrrenan/myfitnesspartner:latest
+             └─ conecta na VM via SSH → docker compose pull + up
+```
+
+O build acontece nos runners do GitHub (não na VM), e a VM só faz `pull` da imagem pronta.
+
+### Topologia na VM
+
+```
+Internet ──► Nginx (443/TLS) ──► app:8080 (rede interna Docker)
+                 │                      │
+                 │                      ├─► postgres (interno)
+          Let's Encrypt                └─► redis (interno)
+          rate limiting
+          /actuator bloqueado
+```
+
+- **Nginx** é o único serviço exposto (portas 80/443). Faz terminação TLS, rate limiting e bloqueia o `/actuator` externamente.
+- **app, postgres, redis** ficam na rede interna do Docker, sem portas publicadas.
+- Firewall (iptables + Security List da Oracle) permite apenas **22, 80 e 443**.
+
+### Configuração (produção)
+
+Toda configuração sensível vem de variáveis de ambiente (ver `.env.prod.example`):
+`POSTGRES_*`, `GEMINI_API_KEY`, `JWT_SECRET`. O arquivo `.env` com valores reais **nunca** é versionado.
+
+```bash
+# Na VM, após copiar .env.prod.example para .env e preencher:
+docker compose -f docker-compose.prod.yml up -d
+
+# Primeira emissão do certificado HTTPS (uma vez):
+./nginx/init-letsencrypt.sh
+```
+
+## 🔒 Segurança
+
+- **HTTPS** obrigatório (Let's Encrypt, renovação automática via certbot)
+- **JWT** em todos os endpoints de dados; apenas `/auth` e `/onboarding` são públicos (necessário para login/cadastro)
+- **Rate limiting** no Nginx nos endpoints de IA — protege a cota do Gemini contra abuso
+- **Actuator** acessível apenas internamente (bloqueado pelo Nginx)
+- **Secrets** fora do versionamento (env vars); senhas com BCrypt
+- **Rede** minimalista: banco e cache sem exposição externa
 
 ## 🧪 Testes
 
@@ -200,7 +263,9 @@ POST /api/daily-goals/reset     → Reseta contagem do dia
 POST /api/ai/calculate-calories   → Calcula calorias de uma descrição
 ```
 
-> Todos os endpoints (exceto `/auth/**` e `/health`) requerem `Authorization: Bearer <token>`
+> **Públicos** (sem token): `/auth/**`, `/onboarding/**`, `/health`, Swagger.
+> **Protegidos** (requerem `Authorization: Bearer <token>`): `/conversations/**`, `/meals/**`, `/daily-goals/**`, `/users/**`, `/ai/**`.
+> O token é obtido ao concluir o onboarding ou fazer login.
 
 ## 📁 Estrutura do Projeto
 
@@ -241,19 +306,26 @@ src/main/java/io/github/mrrenan/myfitnesspartner/
 - [x] Registro de refeições com cálculo de calorias via IA
 - [x] Acompanhamento de metas diárias
 - [x] Histórico de conversas com contexto para a IA
+- [x] Onboarding conversacional (a IA coleta os dados e cria o perfil)
 - [x] Integração Spring AI + Google Gemini
 - [x] Chat web consumindo a API REST
 - [x] Testes unitários e de integração com Testcontainers
 
-### 🚧 Fase 2 — Escalabilidade (Planejada)
-- [ ] RabbitMQ para processamento assíncrono de mensagens
-- [ ] Cache Redis para consultas frequentes
-- [ ] Rate limiting por usuário
+### ✅ Fase 2 — Produção & Segurança (Concluída)
+- [x] Deploy em VM (Oracle Cloud Always Free) via Docker Compose
+- [x] Pipeline CI/CD: GitHub Actions builda a imagem, publica no ghcr.io e faz deploy na VM via SSH
+- [x] HTTPS com Nginx + Let's Encrypt (renovação automática)
+- [x] Rate limiting no Nginx (protege a cota da IA contra abuso)
+- [x] Endpoints de dados protegidos por JWT; actuator bloqueado externamente
+- [x] Hardening de rede (só 22/80/443 expostas; banco e cache isolados)
+- [x] Monitoramento via Spring Boot Actuator (health + métricas)
 
-### 📅 Fase 3 — Cloud & Observabilidade (Planejada)
-- [ ] Deploy AWS (ECS + RDS)
-- [ ] Distributed tracing com OpenTelemetry
-- [ ] Métricas com Prometheus + Grafana
+### 📅 Fase 3 — Evolução (Planejada / dívidas conhecidas)
+- [ ] Migração de schema com Flyway/Liquibase (hoje usa `ddl-auto: update`)
+- [ ] Rate limiting por usuário autenticado (hoje é por IP no Nginx)
+- [ ] Dashboards visuais (Prometheus + Grafana) — requer VM com mais RAM
+- [ ] Telas de perfil, histórico e relatórios no frontend
+- [ ] Integração WhatsApp (depende de acesso à Meta Business API)
 
 ## 👤 Autor
 

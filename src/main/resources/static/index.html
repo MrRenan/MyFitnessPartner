@@ -388,10 +388,114 @@
       flex-shrink: 0;
     }
 
+    /* ── Botão "Meu dia" no header ── */
+    .btn-day {
+      margin-left: auto;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      padding: .45rem .9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .8rem;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    .btn-day:hover { background: var(--green-dark); }
+    /* Com o botão "Meu dia" assumindo o margin-left:auto, o logout não precisa mais */
+    .chat-header .btn-logout { margin-left: .5rem; }
+
+    /* ── Modal "Meu dia" ── */
+    #day-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #day-overlay.open { display: flex; }
+
+    .day-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .day-modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .day-modal-head h3 { font-size: 1.25rem; font-weight: 800; }
+    .day-modal-head p  { font-size: .8rem; color: var(--text-muted); margin-top: .15rem; }
+    .day-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.1rem; cursor: pointer; line-height: 1;
+    }
+    .day-close:hover { color: var(--text); }
+
+    .day-summary {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin: 1.25rem 0;
+    }
+    .day-ring { position: relative; flex-shrink: 0; }
+    #day-ring-fill { transition: stroke-dashoffset .6s ease, stroke .3s; }
+    .day-ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .day-ring-center span  { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .day-ring-center small { font-size: .7rem; color: var(--text-muted); }
+
+    .day-metrics { flex: 1; display: flex; flex-direction: column; gap: .5rem; }
+    .day-metric {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-bottom: 1px solid var(--border); padding-bottom: .4rem;
+    }
+    .day-metric:last-child { border-bottom: none; }
+    .day-metric-label { font-size: .82rem; color: var(--text-muted); }
+    .day-metric-value { font-size: .95rem; font-weight: 700; color: var(--text); }
+
+    .day-divider { height: 1px; background: var(--border); margin: .25rem 0 1rem; }
+    .day-meals-title { font-size: .9rem; font-weight: 700; margin-bottom: .75rem; }
+
+    .day-meals { display: flex; flex-direction: column; gap: .5rem; }
+    .day-meal {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border-radius: 10px; padding: .6rem .8rem;
+    }
+    .day-meal-info { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+    .day-meal-type { font-size: .85rem; font-weight: 600; color: var(--text); }
+    .day-meal-desc {
+      font-size: .75rem; color: var(--text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px;
+    }
+    .day-meal-kcal { font-size: .9rem; font-weight: 700; color: var(--green); flex-shrink: 0; margin-left: .75rem; }
+    .day-meals-empty { font-size: .82rem; color: var(--text-muted); text-align: center; padding: 1rem 0; }
+
+    .day-footer {
+      margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);
+      font-size: .72rem; color: var(--text-muted); text-align: center; line-height: 1.5;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       #auth-screen { padding: 1.5rem 1rem; }
       .card { padding: 1.5rem; }
+      .btn-day { padding: .4rem .7rem; font-size: .75rem; }
+      .day-meal-desc { max-width: 160px; }
       .chat-header, .chat-input-area { padding: .75rem 1rem; }
       .messages { padding: 1rem; }
       .msg { max-width: 92%; }
@@ -506,6 +610,7 @@
       <h2>MyFitnessPartner</h2>
       <p id="chat-subtitle">Seu parceiro fitness com IA</p>
     </div>
+    <button class="btn-day" onclick="openDailyModal()">📊 Meu dia</button>
     <button class="btn-logout" onclick="doLogout()">Sair</button>
   </div>
 
@@ -523,6 +628,58 @@
     <button class="btn-send" onclick="sendChatMessage()" id="send-btn">
       <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
     </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODAL "MEU DIA" ═══════════════════════════ -->
+<div id="day-overlay" onclick="closeDailyModal(event)">
+  <div class="day-modal" onclick="event.stopPropagation()">
+    <div class="day-modal-head">
+      <div>
+        <h3>Seu dia</h3>
+        <p id="day-date"></p>
+      </div>
+      <button class="day-close" onclick="closeDailyModal()" aria-label="Fechar">✕</button>
+    </div>
+
+    <!-- Resumo: anel + métricas -->
+    <div class="day-summary">
+      <div class="day-ring">
+        <svg viewBox="0 0 120 120" width="120" height="120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#334155" stroke-width="11"/>
+          <circle id="day-ring-fill" cx="60" cy="60" r="52" fill="none" stroke="#22c55e"
+                  stroke-width="11" stroke-linecap="round" transform="rotate(-90 60 60)"
+                  stroke-dasharray="327" stroke-dashoffset="327"/>
+        </svg>
+        <div class="day-ring-center">
+          <span id="day-consumed">0</span>
+          <small id="day-goal-sub">de 0</small>
+        </div>
+      </div>
+      <div class="day-metrics">
+        <div class="day-metric">
+          <span class="day-metric-label">Restante</span>
+          <span class="day-metric-value" id="day-remaining">0 kcal</span>
+        </div>
+        <div class="day-metric">
+          <span class="day-metric-label">Refeições</span>
+          <span class="day-metric-value" id="day-mealcount">0</span>
+        </div>
+        <div class="day-metric">
+          <span class="day-metric-label">Status</span>
+          <span class="day-metric-value" id="day-status">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="day-divider"></div>
+
+    <h4 class="day-meals-title">Refeições de hoje</h4>
+    <div class="day-meals" id="day-meals">
+      <!-- preenchido via JS -->
+    </div>
+
+    <div class="day-footer" id="day-footer"></div>
   </div>
 </div>
 
@@ -776,10 +933,10 @@
     }
   }
 
-  function appendChatMsg(role, text) {
+  function appendChatMsg(role, text, timestamp) {
     const container = document.getElementById('chat-messages');
     const typing    = document.getElementById('typing');
-    container.insertBefore(buildMsgEl(role, text), typing);
+    container.insertBefore(buildMsgEl(role, text, timestamp), typing);
     container.scrollTop = container.scrollHeight;
   }
 
@@ -843,16 +1000,187 @@
     const subtitle = document.getElementById('chat-subtitle');
     subtitle.textContent = session.name ? `Olá, ${session.name}! 👋` : 'Seu parceiro fitness com IA';
 
-    // Se veio mensagem de boas-vindas do onboarding, mostra no chat
     if (welcomeMessage) {
+      // Veio do onboarding: usuário recém-criado, sem histórico — só a boas-vindas
       setTimeout(() => appendChatMsg('ai', welcomeMessage), 300);
+    } else {
+      // Login ou retomada de sessão: carrega o histórico de conversas
+      loadHistory();
     }
+  }
+
+  /**
+   * Carrega o histórico de conversas e renderiza no chat.
+   * Achata as mensagens de todas as conversas em ordem cronológica.
+   */
+  async function loadHistory() {
+    if (!session.token || !session.whatsappNumber) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/conversations/history?whatsappNumber=${encodeURIComponent(session.whatsappNumber)}`,
+        { headers: { 'Authorization': `Bearer ${session.token}` } }
+      );
+
+      if (res.status === 401) { doLogout(); return; }
+      if (!res.ok) return; // sem histórico ou erro — chat começa vazio, sem travar
+
+      const conversations = await res.json();
+
+      // Achata todas as mensagens de todas as conversas e ordena por timestamp
+      const allMessages = conversations
+        .flatMap(c => c.messages || [])
+        .filter(m => m && m.content)
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      if (allMessages.length === 0) return;
+
+      // Renderiza cada mensagem (role 'assistant' vira 'ai' para o CSS)
+      allMessages.forEach(m => {
+        const role = m.role === 'user' ? 'user' : 'ai';
+        appendChatMsg(role, m.content, m.timestamp);
+      });
+
+      // Garante que o scroll vai para a mensagem mais recente
+      const container = document.getElementById('chat-messages');
+      container.scrollTop = container.scrollHeight;
+    } catch {
+      // Falha de rede ao carregar histórico não deve bloquear o chat
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Modal "Meu dia" — consumo diário + refeições
+  // ═══════════════════════════════════════════════════════
+  const RING_CIRCUMFERENCE = 327; // 2π * r (r=52), igual ao stroke-dasharray do SVG
+
+  const MEAL_TYPE_LABELS = {
+    BREAKFAST:       '🍳 Café da manhã',
+    MORNING_SNACK:   '🥪 Lanche da manhã',
+    LUNCH:           '🍽️ Almoço',
+    AFTERNOON_SNACK: '🥪 Lanche da tarde',
+    DINNER:          '🌙 Jantar',
+    EVENING_SNACK:   '🌃 Ceia',
+    OTHER:           '🍴 Refeição',
+  };
+
+  const STATUS_LABELS = {
+    'Under Goal': 'Abaixo da meta',
+    'On Track':   'No caminho certo',
+    'Over Goal':  'Acima da meta',
+  };
+
+  async function openDailyModal() {
+    if (!session.token || !session.whatsappNumber) return;
+
+    const overlay = document.getElementById('day-overlay');
+    overlay.classList.add('open');
+
+    // Data de hoje por extenso
+    document.getElementById('day-date').textContent =
+      new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const auth = { 'Authorization': `Bearer ${session.token}` };
+    const phone = encodeURIComponent(session.whatsappNumber);
+
+    try {
+      // Busca meta do dia e refeições em paralelo
+      const [goalRes, mealsRes] = await Promise.all([
+        fetch(`${API_BASE}/daily-goals/today?whatsappNumber=${phone}`, { headers: auth }),
+        fetch(`${API_BASE}/meals/today?whatsappNumber=${phone}`,       { headers: auth }),
+      ]);
+
+      if (goalRes.status === 401 || mealsRes.status === 401) { doLogout(); return; }
+
+      const goal  = goalRes.ok  ? await goalRes.json()  : null;
+      const meals = mealsRes.ok ? await mealsRes.json() : [];
+
+      renderDailyGoal(goal);
+      renderDailyMeals(meals);
+    } catch {
+      document.getElementById('day-meals').innerHTML =
+        '<div class="day-meals-empty">Não foi possível carregar os dados agora.</div>';
+    }
+  }
+
+  function renderDailyGoal(goal) {
+    const consumed  = goal?.caloriesConsumed ?? 0;
+    const target    = goal?.calorieGoal ?? 0;
+    const remaining = goal?.remainingCalories ?? Math.max(0, target - consumed);
+    const mealCount = goal?.mealCount ?? 0;
+    const statusRaw = goal?.status ?? '';
+
+    document.getElementById('day-consumed').textContent = consumed;
+    document.getElementById('day-goal-sub').textContent = `de ${target}`;
+    document.getElementById('day-remaining').textContent = `${remaining} kcal`;
+    document.getElementById('day-mealcount').textContent = mealCount;
+    document.getElementById('day-status').textContent = STATUS_LABELS[statusRaw] || (target ? '—' : 'Sem meta');
+
+    // Anel de progresso: fração consumida (limitada a 100% visualmente)
+    const pct = target > 0 ? Math.min(consumed / target, 1) : 0;
+    const offset = RING_CIRCUMFERENCE * (1 - pct);
+    const ring = document.getElementById('day-ring-fill');
+    ring.style.strokeDashoffset = offset;
+    // Vermelho se passou da meta, verde caso contrário
+    ring.style.stroke = (target > 0 && consumed > target) ? '#f87171' : '#22c55e';
+
+    // Rodapé com objetivo e meta
+    const footer = document.getElementById('day-footer');
+    footer.textContent = target > 0
+      ? `Meta diária: ${target} kcal`
+      : 'Converse com o assistente para registrar sua primeira refeição.';
+  }
+
+  function renderDailyMeals(meals) {
+    const container = document.getElementById('day-meals');
+    container.innerHTML = '';
+
+    if (!meals || meals.length === 0) {
+      container.innerHTML = '<div class="day-meals-empty">Nenhuma refeição registrada hoje ainda.</div>';
+      return;
+    }
+
+    // Ordena por horário
+    meals.sort((a, b) => new Date(a.mealDate) - new Date(b.mealDate));
+
+    meals.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'day-meal';
+
+      const info = document.createElement('div');
+      info.className = 'day-meal-info';
+
+      const type = document.createElement('span');
+      type.className = 'day-meal-type';
+      type.textContent = MEAL_TYPE_LABELS[m.mealType] || '🍴 Refeição';
+
+      const desc = document.createElement('span');
+      desc.className = 'day-meal-desc';
+      desc.textContent = m.description || '';
+      desc.title = m.description || '';
+
+      info.appendChild(type);
+      info.appendChild(desc);
+
+      const kcal = document.createElement('span');
+      kcal.className = 'day-meal-kcal';
+      kcal.textContent = `${m.calories ?? 0} kcal`;
+
+      item.appendChild(info);
+      item.appendChild(kcal);
+      container.appendChild(item);
+    });
+  }
+
+  function closeDailyModal(event) {
+    // Fecha ao clicar no overlay, no X, ou chamada direta
+    document.getElementById('day-overlay').classList.remove('open');
   }
 
   // ═══════════════════════════════════════════════════════
   // Helpers
   // ═══════════════════════════════════════════════════════
-  function buildMsgEl(role, text) {
+  function buildMsgEl(role, text, timestamp) {
     const wrapper = document.createElement('div');
     wrapper.className = `msg ${role}`;
 
@@ -868,7 +1196,9 @@
 
     const time = document.createElement('div');
     time.className = 'msg-time';
-    time.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    // Usa o timestamp fornecido (histórico) ou a hora atual (mensagem nova)
+    const when = timestamp ? new Date(timestamp) : new Date();
+    time.textContent = when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     wrapper.appendChild(bubble);
     wrapper.appendChild(time);

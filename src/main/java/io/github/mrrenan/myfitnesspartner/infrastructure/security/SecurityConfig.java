@@ -24,21 +24,23 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    // Endpoints públicos — não precisam de token
+    // Endpoints públicos — não exigem token.
+    // Apenas o que precisa ser acessível ANTES de ter um token:
+    // onboarding (cria a conta), auth (login/registro) e docs.
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/auth/**",           // login e register
-            "/onboarding/**",     // onboarding conversacional (novo usuário)
+            "/auth/**",           // login e registro — é como se obtém o token
+            "/onboarding/**",     // onboarding conversacional (usuário ainda não tem conta)
             "/health",            // health check
-            "/webhook/**",        // Webhook
+            "/webhook/**",        // webhook (futuro)
             "/v3/api-docs/**",    // Swagger
             "/swagger-ui/**",     // Swagger UI
             "/swagger-ui.html",   // Swagger UI
-            "/users/**",          // ← temporário para MVP
-            "/meals/**",          // ← temporário para MVP
-            "/daily-goals/**",    // ← temporário para MVP
-            "/ai/**",
-            "/actuator/**"        // health, metrics, prometheus (monitoramento)
-            // Recursos estáticos (HTML, JS, CSS) são tratados pelo webSecurityCustomizer abaixo
+            "/actuator/**"        // health, metrics, prometheus (bloqueado externamente pelo Nginx)
+            // Recursos estáticos (HTML, JS, CSS) são tratados pelo webSecurityCustomizer abaixo.
+            //
+            // Endpoints de DADOS exigem JWT (não estão aqui):
+            //   /users/**, /meals/**, /daily-goals/**, /conversations/**, /ai/**
+            // O usuário recebe o token ao concluir o onboarding ou fazer login.
     };
 
     @Bean

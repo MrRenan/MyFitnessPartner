@@ -120,10 +120,25 @@ public class OnboardingService {
                 ? message
                 : "Histórico da conversa:\n" + history + "\n\nUsuário: " + message;
 
-        String aiResponse = chatClient.prompt()
-                .user(userContent)
-                .call()
-                .content();
+        String aiResponse;
+        try {
+            aiResponse = chatClient.prompt()
+                    .user(userContent)
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            // Não vaza o erro técnico do provedor (ex: JSON de 429 do Gemini) para a tela
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            boolean quotaExceeded = msg.contains("429") || msg.contains("RESOURCE_EXHAUSTED");
+            log.warn("Falha na IA durante onboarding (quota={}): {}", quotaExceeded, msg);
+
+            return OnboardingResponse.builder()
+                    .status(OnboardingResponse.Status.ERROR)
+                    .aiMessage(quotaExceeded
+                            ? "Nosso assistente atingiu o limite de uso por hoje. Tente novamente mais tarde."
+                            : "O assistente está indisponível no momento. Tente novamente em instantes.")
+                    .build();
+        }
 
         log.debug("Resposta da IA para onboarding de {}: {}", phoneNumber, aiResponse);
 

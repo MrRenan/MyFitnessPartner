@@ -127,7 +127,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle generic exceptions
+     * Handle AiServiceUnavailableException (cota excedida, timeout, IA indisponível).
+     * Retorna 503 com mensagem amigável — nunca expõe o erro técnico do provedor.
+     */
+    @ExceptionHandler(io.github.mrrenan.myfitnesspartner.domain.exception.AiServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleAiServiceUnavailableException(
+            io.github.mrrenan.myfitnesspartner.domain.exception.AiServiceUnavailableException ex,
+            WebRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .error("AI Service Unavailable")
+                .message(ex.getMessage()) // mensagem já é amigável, definida no adapter
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+
+        log.warn("IA indisponível: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
+    }
+
+    /**
+     * Handle generic exceptions.
+     * NÃO expõe ex.getMessage() cru — detalhes técnicos ficam só no log.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
@@ -137,7 +159,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message(ex.getMessage())
+                .message("Ocorreu um erro inesperado. Tente novamente mais tarde.")
                 .path(request.getDescription(false).replace("uri=", ""))
                 .build();
 

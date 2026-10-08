@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mrrenan.myfitnesspartner.application.dto.CalorieEstimate;
 import io.github.mrrenan.myfitnesspartner.application.port.out.FitnessAiPort;
+import io.github.mrrenan.myfitnesspartner.domain.exception.AiServiceUnavailableException;
 import io.github.mrrenan.myfitnesspartner.infrastructure.config.AppProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,11 +43,7 @@ public class SpringAiAdapter implements FitnessAiPort {
             Refeição: "%s"
             """.formatted(description);
 
-        String response = chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
-
+        String response = callAi(prompt);
         return parseCalorieEstimate(response);
     }
 
@@ -58,10 +55,35 @@ public class SpringAiAdapter implements FitnessAiPort {
                 ? "Contexto anterior: " + context + "\n\nMensagem: " + userMessage
                 : userMessage;
 
-        return chatClient.prompt()
-                .user(userContent)
-                .call()
-                .content();
+        return callAi(userContent);
+    }
+
+    /**
+     * Chama o modelo de IA e trata falhas do provedor (cota, timeout, indisponibilidade),
+     * convertendo-as numa exceção de domínio com mensagem amigável — evita que detalhes
+     * técnicos do provedor (ex: JSON de erro 429 do Gemini) vazem para o usuário.
+     */
+    private String callAi(String userContent) {
+        try {
+            return chatClient.prompt()
+                    .user(userContent)
+                    .call()
+                    .content();
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            boolean quotaExceeded = msg.contains("429") || msg.contains("RESOURCE_EXHAUSTED");
+
+            if (quotaExceeded) {
+                log.warn("Cota da IA excedida: {}", msg);
+                throw new AiServiceUnavailableException(
+                        "Nosso assistente atingiu o limite de uso por hoje. " +
+                        "Tente novamente mais tarde.", e);
+            }
+
+            log.error("Falha ao chamar o serviço de IA: {}", msg, e);
+            throw new AiServiceUnavailableException(
+                    "O assistente está indisponível no momento. Tente novamente em instantes.", e);
+        }
     }
 
     private CalorieEstimate parseCalorieEstimate(String response) {
